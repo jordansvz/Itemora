@@ -34,3 +34,21 @@ function itemora_enqueue_assets() {
     wp_enqueue_script('itemora-script', ITEMORA_PLUGIN_URL . 'assets/js/script.js', array('jquery'), ITEMORA_VERSION, true);
 }
 add_action('wp_enqueue_scripts', 'itemora_enqueue_assets');
+
+
+
+// Enqueue scripts y estilos
+function itemora_enqueue_scripts() {
+    // Estilos
+    wp_enqueue_style('itemora-styles', ITEMORA_PLUGIN_URL . 'assets/css/style.css', array(), ITEMORA_VERSION);
+
+    // Scripts
+    wp_enqueue_script('jquery');
+    wp_enqueue_script('itemora-scripts', ITEMORA_PLUGIN_URL . 'assets/js/script.js', array('jquery'), ITEMORA_VERSION, true);
+
+    // Localizar script para pasar variables PHP a JavaScript
+    wp_localize_script('itemora-scripts', 'itemora_ajax', array(
+        'ajax_url' => admin_url('admin-ajax.php'),
+    ));
+}
+add_action('wp_enqueue_scripts', 'itemora_enqueue_scripts');

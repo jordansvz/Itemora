@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Itemora
  * Description: Sistema avanzado para gestionar productos, categorías, sucursales y campos personalizados en WordPress.
- * Version: 1.0.0
+ * Version: 1.0.1
  * Author: JordanSVz
  * Author URI: https://jordansvz.com
  * License: GPL-2.0+

@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Itemora
  * Description: Sistema avanzado para gestionar productos, categorías, sucursales y campos personalizados en WordPress.
- * Version: 1.0.1
+ * Version: 1.0.3
  * Author: JordanSVz
  * Author URI: https://jordansvz.com
  * License: GPL-2.0+
@@ -16,7 +16,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Definir constantes del plugin
-define('ITEMORA_VERSION', '1.0.0');
+define('ITEMORA_VERSION', '1.0.1'); // Actualizado para coincidir con la versión del plugin
 define('ITEMORA_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('ITEMORA_PLUGIN_URL', plugin_dir_url(__FILE__));
 
@@ -28,27 +28,40 @@ require_once ITEMORA_PLUGIN_DIR . 'includes/formularios.php'; // Formularios fro
 require_once ITEMORA_PLUGIN_DIR . 'includes/admin-menu.php'; // Menú de administración
 require_once ITEMORA_PLUGIN_DIR . 'includes/helpers.php'; // Funciones auxiliares
 
-// Enqueue estilos y scripts
-function itemora_enqueue_assets() {
-    wp_enqueue_style('itemora-style', ITEMORA_PLUGIN_URL . 'assets/css/style.css', array(), ITEMORA_VERSION);
-    wp_enqueue_script('itemora-script', ITEMORA_PLUGIN_URL . 'assets/js/script.js', array('jquery'), ITEMORA_VERSION, true);
-}
-add_action('wp_enqueue_scripts', 'itemora_enqueue_assets');
-
-
-
-// Enqueue scripts y estilos
+// Enqueue scripts y estilos (versión unificada)
 function itemora_enqueue_scripts() {
     // Estilos
-    wp_enqueue_style('itemora-styles', ITEMORA_PLUGIN_URL . 'assets/css/style.css', array(), ITEMORA_VERSION);
+    wp_enqueue_style('itemora-style', ITEMORA_PLUGIN_URL . 'assets/css/style.css', array(), ITEMORA_VERSION);
 
     // Scripts
     wp_enqueue_script('jquery');
-    wp_enqueue_script('itemora-scripts', ITEMORA_PLUGIN_URL . 'assets/js/script.js', array('jquery'), ITEMORA_VERSION, true);
+    wp_enqueue_script('itemora-script', ITEMORA_PLUGIN_URL . 'assets/js/script.js', array('jquery'), ITEMORA_VERSION, true);
 
     // Localizar script para pasar variables PHP a JavaScript
-    wp_localize_script('itemora-scripts', 'itemora_ajax', array(
+    wp_localize_script('itemora-script', 'itemora_ajax', array(
         'ajax_url' => admin_url('admin-ajax.php'),
+        'nonce' => wp_create_nonce('itemora_nonce')
     ));
 }
 add_action('wp_enqueue_scripts', 'itemora_enqueue_scripts');
+
+// Enqueue scripts y estilos para el admin
+function itemora_enqueue_admin_scripts($hook) {
+    // Solo cargar en páginas del plugin
+    if (strpos($hook, 'itemora') === false) {
+        return;
+    }
+    
+    // Estilos admin
+    wp_enqueue_style('itemora-admin-style', ITEMORA_PLUGIN_URL . 'assets/css/admin-style.css', array(), ITEMORA_VERSION);
+    
+    // Scripts admin
+    wp_enqueue_script('itemora-admin-script', ITEMORA_PLUGIN_URL . 'assets/js/admin-script.js', array('jquery'), ITEMORA_VERSION, true);
+    
+    // Localizar script admin
+    wp_localize_script('itemora-admin-script', 'itemora_admin', array(
+        'ajax_url' => admin_url('admin-ajax.php'),
+        'nonce' => wp_create_nonce('itemora_admin_nonce')
+    ));
+}
+add_action('admin_enqueue_scripts', 'itemora_enqueue_admin_scripts');

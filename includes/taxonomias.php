@@ -46,9 +46,45 @@ function itemora_register_taxonomies() {
         'query_var'         => true,
         'rewrite'           => array('slug' => 'tipo-producto'),
         'show_in_rest'      => true,
+        'show_in_menu'      => true,
     );
 
     register_taxonomy('tipo_producto', 'itemora_producto', $tipo_args);
+
+    // Taxonomía Categoría de Producto
+    $categoria_labels = array(
+        'name'                       => _x('Categorías', 'taxonomy general name', 'itemora'),
+        'singular_name'              => _x('Categoría', 'taxonomy singular name', 'itemora'),
+        'search_items'               => __('Buscar Categorías', 'itemora'),
+        'popular_items'              => __('Categorías Populares', 'itemora'),
+        'all_items'                  => __('Todas las Categorías', 'itemora'),
+        'parent_item'                => __('Categoría Padre', 'itemora'),
+        'parent_item_colon'          => __('Categoría Padre:', 'itemora'),
+        'edit_item'                  => __('Editar Categoría', 'itemora'),
+        'update_item'                => __('Actualizar Categoría', 'itemora'),
+        'add_new_item'               => __('Añadir Nueva Categoría', 'itemora'),
+        'new_item_name'              => __('Nombre de la Nueva Categoría', 'itemora'),
+        'separate_items_with_commas' => __('Separar categorías con comas', 'itemora'),
+        'add_or_remove_items'        => __('Añadir o eliminar categorías', 'itemora'),
+        'choose_from_most_used'      => __('Elegir de las más usadas', 'itemora'),
+        'menu_name'                  => __('Categorías', 'itemora'),
+    );
+
+    $categoria_args = array(
+        'labels'            => $categoria_labels,
+        'hierarchical'      => true,
+        'public'            => true,
+        'show_ui'           => true,
+        'show_admin_column' => true,
+        'show_in_nav_menus' => true,
+        'show_tagcloud'     => false,
+        'query_var'         => true,
+        'rewrite'           => array('slug' => 'categoria-producto'),
+        'show_in_rest'      => true,
+        'show_in_menu'      => true,
+    );
+
+    register_taxonomy('categoria_producto', 'itemora_producto', $categoria_args);
 
     // Taxonomía Sucursal (si está activada)
     if (get_option('itemora_activar_sucursal', 'yes') === 'yes') {
@@ -81,46 +117,13 @@ function itemora_register_taxonomies() {
             'query_var'         => true,
             'rewrite'           => array('slug' => 'sucursal'),
             'show_in_rest'      => true,
+            'show_in_menu'      => true,
         );
 
         register_taxonomy('sucursal', 'itemora_producto', $sucursal_args);
     }
-
-    // Taxonomía Categoría de Producto
-    $categoria_labels = array(
-        'name'                       => _x('Categorías', 'taxonomy general name', 'itemora'),
-        'singular_name'              => _x('Categoría', 'taxonomy singular name', 'itemora'),
-        'search_items'               => __('Buscar Categorías', 'itemora'),
-        'popular_items'              => __('Categorías Populares', 'itemora'),
-        'all_items'                  => __('Todas las Categorías', 'itemora'),
-        'parent_item'                => __('Categoría Padre', 'itemora'),
-        'parent_item_colon'          => __('Categoría Padre:', 'itemora'),
-        'edit_item'                  => __('Editar Categoría', 'itemora'),
-        'update_item'                => __('Actualizar Categoría', 'itemora'),
-        'add_new_item'               => __('Añadir Nueva Categoría', 'itemora'),
-        'new_item_name'              => __('Nombre de la Nueva Categoría', 'itemora'),
-        'separate_items_with_commas' => __('Separar categorías con comas', 'itemora'),
-        'add_or_remove_items'        => __('Añadir o eliminar categorías', 'itemora'),
-        'choose_from_most_used'      => __('Elegir de las más usadas', 'itemora'),
-        'menu_name'                  => __('Categorías', 'itemora'),
-    );
-
-    $categoria_args = array(
-        'labels'            => $categoria_labels,
-        'hierarchical'      => true,
-        'public'            => true,
-        'show_ui'           => true,
-        'show_admin_column' => true,
-        'show_in_nav_menus' => true,
-        'show_tagcloud'     => false,
-        'query_var'         => true,
-        'rewrite'           => array('slug' => 'categoria-producto'),
-        'show_in_rest'      => true,
-    );
-
-    register_taxonomy('categoria_producto', 'itemora_producto', $categoria_args);
 }
-add_action('init', 'itemora_register_taxonomies');
+add_action('init', 'itemora_register_taxonomies', 11); // Prioridad 11 para asegurar que se ejecute después del CPT
 
 /**
  * Añade columnas de taxonomías a la lista de productos
@@ -381,6 +384,59 @@ function itemora_register_default_terms() {
 add_action('admin_init', 'itemora_register_default_terms');
 
 /**
+ * Añade campos adicionales a la taxonomía "Sucursal"
+ */
+function itemora_agregar_campos_sucursal($term) {
+    // Verificar si estamos editando o agregando un nuevo término
+    $term_id = isset($term->term_id) ? $term->term_id : 0;
+
+    // Obtener valores actuales de los campos adicionales
+    $ubicacion = get_term_meta($term_id, '_ubicacion', true);
+    $telefono = get_term_meta($term_id, '_telefono', true);
+    $horario = get_term_meta($term_id, '_horario', true);
+
+    // HTML para el formulario
+    ?>
+    <div class="form-field term-group">
+        <label for="ubicacion"><?php _e('Ubicación (Google Maps)', 'itemora'); ?></label>
+        <input type="text" name="ubicacion" id="ubicacion" value="<?php echo esc_attr($ubicacion); ?>">
+        <p><?php _e('Ingresa la URL o coordenadas de Google Maps.', 'itemora'); ?></p>
+    </div>
+    <div class="form-field term-group">
+        <label for="telefono"><?php _e('Teléfono', 'itemora'); ?></label>
+        <input type="text" name="telefono" id="telefono" value="<?php echo esc_attr($telefono); ?>">
+        <p><?php _e('Ingresa el número de teléfono de la sucursal.', 'itemora'); ?></p>
+    </div>
+    <div class="form-field term-group">
+        <label for="horario"><?php _e('Horario de atención', 'itemora'); ?></label>
+        <textarea name="horario" id="horario" rows="5"><?php echo esc_textarea($horario); ?></textarea>
+        <p><?php _e('Ingresa el horario de atención de la sucursal.', 'itemora'); ?></p>
+    </div>
+    <?php
+}
+add_action('sucursal_add_form_fields', 'itemora_agregar_campos_sucursal');
+add_action('sucursal_edit_form_fields', 'itemora_agregar_campos_sucursal');
+
+/**
+ * Guarda los campos adicionales de la taxonomía "Sucursal"
+ */
+function itemora_guardar_campos_sucursal($term_id) {
+    if (isset($_POST['ubicacion'])) {
+        update_term_meta($term_id, '_ubicacion', sanitize_text_field($_POST['ubicacion']));
+    }
+    
+    if (isset($_POST['telefono'])) {
+        update_term_meta($term_id, '_telefono', sanitize_text_field($_POST['telefono']));
+    }
+    
+    if (isset($_POST['horario'])) {
+        update_term_meta($term_id, '_horario', sanitize_textarea_field($_POST['horario']));
+    }
+}
+add_action('created_sucursal', 'itemora_guardar_campos_sucursal');
+add_action('edited_sucursal', 'itemora_guardar_campos_sucursal');
+
+/**
  * Añade columnas personalizadas a la lista de términos de Sucursal
  *
  * @param array $columns Columnas existentes
@@ -396,6 +452,7 @@ function itemora_sucursal_columns($columns) {
         if ($key === 'description') {
             $new_columns['ubicacion'] = __('Ubicación', 'itemora');
             $new_columns['telefono'] = __('Teléfono', 'itemora');
+            $new_columns['horario'] = __('Horario', 'itemora');
         }
     }
     
@@ -425,6 +482,11 @@ function itemora_sucursal_column_content($content, $column_name, $term_id) {
         case 'telefono':
             $telefono = get_term_meta($term_id, '_telefono', true);
             $content = !empty($telefono) ? esc_html($telefono) : '—';
+            break;
+            
+        case 'horario':
+            $horario = get_term_meta($term_id, '_horario', true);
+            $content = !empty($horario) ? '<span title="' . esc_attr($horario) . '">' . __('Ver horario', 'itemora') . '</span>' : '—';
             break;
     }
     

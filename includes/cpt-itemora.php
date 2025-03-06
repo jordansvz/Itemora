@@ -1,6 +1,8 @@
 <?php
 /**
- * Custom Post Type Registration for Itemora
+ * Custom Post Type para Itemora
+ *
+ * Registra y gestiona el CPT de productos para Itemora
  *
  * @package Itemora
  */
@@ -11,577 +13,471 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Register the Producto custom post type
+ * Registra el Custom Post Type para productos
  */
-function itemora_register_producto_cpt() {
+function itemora_register_cpt() {
     $labels = array(
-        'name'                  => _x('Productos', 'Post type general name', 'itemora'),
-        'singular_name'         => _x('Producto', 'Post type singular name', 'itemora'),
-        'menu_name'             => _x('Productos', 'Admin Menu text', 'itemora'),
-        'name_admin_bar'        => _x('Producto', 'Add New on Toolbar', 'itemora'),
-        'add_new'               => __('Añadir Nuevo', 'itemora'),
-        'add_new_item'          => __('Añadir Nuevo Producto', 'itemora'),
-        'new_item'              => __('Nuevo Producto', 'itemora'),
-        'edit_item'             => __('Editar Producto', 'itemora'),
-        'view_item'             => __('Ver Producto', 'itemora'),
-        'all_items'             => __('Todos los Productos', 'itemora'),
-        'search_items'          => __('Buscar Productos', 'itemora'),
-        'parent_item_colon'     => __('Productos Padre:', 'itemora'),
-        'not_found'             => __('No se encontraron productos.', 'itemora'),
-        'not_found_in_trash'    => __('No se encontraron productos en la papelera.', 'itemora'),
-        'featured_image'        => __('Imagen Destacada', 'itemora'),
-        'set_featured_image'    => __('Establecer imagen destacada', 'itemora'),
-        'remove_featured_image' => __('Eliminar imagen destacada', 'itemora'),
-        'use_featured_image'    => __('Usar como imagen destacada', 'itemora'),
-        'archives'              => __('Archivos de Productos', 'itemora'),
-        'insert_into_item'      => __('Insertar en producto', 'itemora'),
-        'uploaded_to_this_item' => __('Subido a este producto', 'itemora'),
-        'filter_items_list'     => __('Filtrar lista de productos', 'itemora'),
-        'items_list_navigation' => __('Navegación de lista de productos', 'itemora'),
-        'items_list'            => __('Lista de productos', 'itemora'),
+        'name'               => _x('Productos', 'post type general name', 'itemora'),
+        'singular_name'      => _x('Producto', 'post type singular name', 'itemora'),
+        'menu_name'          => _x('Itemora', 'admin menu', 'itemora'),
+        'name_admin_bar'     => _x('Producto', 'add new on admin bar', 'itemora'),
+        'add_new'            => _x('Añadir Nuevo', 'producto', 'itemora'),
+        'add_new_item'       => __('Añadir Nuevo Producto', 'itemora'),
+        'new_item'           => __('Nuevo Producto', 'itemora'),
+        'edit_item'          => __('Editar Producto', 'itemora'),
+        'view_item'          => __('Ver Producto', 'itemora'),
+        'all_items'          => __('Todos los Productos', 'itemora'),
+        'search_items'       => __('Buscar Productos', 'itemora'),
+        'parent_item_colon'  => __('Productos Padre:', 'itemora'),
+        'not_found'          => __('No se encontraron productos.', 'itemora'),
+        'not_found_in_trash' => __('No se encontraron productos en la papelera.', 'itemora')
     );
 
     $args = array(
-        'labels'                => $labels,
-        'public'                => true,
-        'publicly_queryable'    => true,
-        'show_ui'               => true,
-        'show_in_menu'          => true,
-        'query_var'             => true,
-        'rewrite'               => array('slug' => 'productos'),
-        'capability_type'       => 'post',
-        'has_archive'           => true,
-        'hierarchical'          => false,
-        'menu_position'         => 5,
-        'menu_icon'             => 'dashicons-cart',
-        'supports'              => array('title', 'editor', 'thumbnail', 'excerpt', 'custom-fields'),
-        'show_in_rest'          => true,
-        'rest_base'             => 'productos',
-        'rest_controller_class' => 'WP_REST_Posts_Controller',
+        'labels'              => $labels,
+        'public'              => true,
+        'publicly_queryable'  => true,
+        'show_ui'             => true,
+        'show_in_menu'        => true,
+        'query_var'           => true,
+        'rewrite'             => array('slug' => 'productos'),
+        'capability_type'     => 'post',
+        'has_archive'         => true,
+        'hierarchical'        => false,
+        'menu_position'       => 5,
+        'menu_icon'           => 'dashicons-products',
+        'supports'            => array('title', 'editor', 'thumbnail', 'excerpt', 'custom-fields'),
+        'show_in_rest'        => true,
+        'taxonomies'          => array('categoria_producto', 'tipo_producto', 'sucursal'),
     );
 
     register_post_type('itemora_producto', $args);
 }
-add_action('init', 'itemora_register_producto_cpt');
+add_action('init', 'itemora_register_cpt', 10);
 
 /**
- * Register meta boxes for the Producto custom post type
+ * Añade metaboxes para los detalles del producto
  */
-function itemora_register_producto_meta_boxes() {
+function itemora_add_product_metaboxes() {
     add_meta_box(
-        'itemora_producto_details',
+        'itemora_product_details',
         __('Detalles del Producto', 'itemora'),
-        'itemora_producto_details_callback',
+        'itemora_product_details_callback',
         'itemora_producto',
         'normal',
         'high'
     );
+    
+    // Metabox para precio y stock solo si está activado
+    if (get_option('itemora_activar_detalles', 'yes') === 'yes') {
+        add_meta_box(
+            'itemora_product_price',
+            __('Precio y Stock', 'itemora'),
+            'itemora_product_price_callback',
+            'itemora_producto',
+            'side',
+            'default'
+        );
+    }
+    
+    // Metabox para características adicionales solo si está activado
+    if (get_option('itemora_activar_extras', 'no') === 'yes') {
+        add_meta_box(
+            'itemora_product_extras',
+            __('Características Adicionales', 'itemora'),
+            'itemora_product_extras_callback',
+            'itemora_producto',
+            'normal',
+            'default'
+        );
+    }
 }
-add_action('add_meta_boxes', 'itemora_register_producto_meta_boxes');
+add_action('add_meta_boxes', 'itemora_add_product_metaboxes');
 
 /**
- * Meta box display callback
- *
- * @param WP_Post $post Current post object.
+ * Callback para el metabox de detalles del producto
  */
-function itemora_producto_details_callback($post) {
-    // Add nonce for security
-    wp_nonce_field('itemora_save_producto_data', 'itemora_producto_nonce');
-
-    // Get current values
-    $precio = get_post_meta($post->ID, '_itemora_precio', true);
+function itemora_product_details_callback($post) {
+    // Añadir nonce para verificación
+    wp_nonce_field('itemora_product_details_nonce', 'itemora_product_details_nonce');
+    
+    // Obtener valores actuales
     $sku = get_post_meta($post->ID, '_itemora_sku', true);
-    $stock = get_post_meta($post->ID, '_itemora_stock', true);
+    $codigo = get_post_meta($post->ID, '_itemora_codigo', true);
+    $marca = get_post_meta($post->ID, '_itemora_marca', true);
+    $modelo = get_post_meta($post->ID, '_itemora_modelo', true);
     
-    // Get detalles if enabled
-    $detalles = array();
-    if (get_option('itemora_activar_detalles') === 'yes') {
-        $detalles[1] = get_post_meta($post->ID, '_itemora_detalle_01', true);
-        $detalles[2] = get_post_meta($post->ID, '_itemora_detalle_02', true);
-        $detalles[3] = get_post_meta($post->ID, '_itemora_detalle_03', true);
-    }
-    
-    // Get extras if enabled
-    $extras = array();
-    if (get_option('itemora_activar_extras') === 'yes') {
-        $extras[1] = get_post_meta($post->ID, '_itemora_extra_01', true);
-        $extras[2] = get_post_meta($post->ID, '_itemora_extra_02', true);
-        $extras[3] = get_post_meta($post->ID, '_itemora_extra_03', true);
-    }
+    // Formulario para los campos
     ?>
-    <div class="itemora-meta-box">
-        <div class="itemora-field-row">
-            <label for="itemora_precio"><?php _e('Precio', 'itemora'); ?></label>
-            <input type="text" id="itemora_precio" name="itemora_precio" value="<?php echo esc_attr($precio); ?>">
+    <div class="itemora-metabox">
+        <div class="itemora-field">
+            <label for="itemora_sku"><?php _e('SKU:', 'itemora'); ?></label>
+            <input type="text" id="itemora_sku" name="itemora_sku" value="<?php echo esc_attr($sku); ?>" />
         </div>
         
-        <div class="itemora-field-row">
-            <label for="itemora_sku"><?php _e('SKU', 'itemora'); ?></label>
-            <input type="text" id="itemora_sku" name="itemora_sku" value="<?php echo esc_attr($sku); ?>">
+        <div class="itemora-field">
+            <label for="itemora_codigo"><?php _e('Código:', 'itemora'); ?></label>
+            <input type="text" id="itemora_codigo" name="itemora_codigo" value="<?php echo esc_attr($codigo); ?>" />
         </div>
         
-        <div class="itemora-field-row">
-            <label for="itemora_stock"><?php _e('Stock', 'itemora'); ?></label>
-            <input type="number" id="itemora_stock" name="itemora_stock" value="<?php echo esc_attr($stock); ?>" min="0">
+        <div class="itemora-field">
+            <label for="itemora_marca"><?php _e('Marca:', 'itemora'); ?></label>
+            <input type="text" id="itemora_marca" name="itemora_marca" value="<?php echo esc_attr($marca); ?>" />
         </div>
         
-        <?php if (get_option('itemora_activar_detalles') === 'yes') : ?>
-            <div class="itemora-section">
-                <h4><?php _e('Detalles', 'itemora'); ?></h4>
-                
-                <div class="itemora-field-row">
-                    <label for="itemora_detalle_01"><?php echo esc_html(get_option('itemora_label_detalles_01', 'Detalle 1')); ?></label>
-                    <input type="text" id="itemora_detalle_01" name="itemora_detalle_01" value="<?php echo esc_attr($detalles[1]); ?>">
-                </div>
-                
-                <div class="itemora-field-row">
-                    <label for="itemora_detalle_02"><?php echo esc_html(get_option('itemora_label_detalles_02', 'Detalle 2')); ?></label>
-                    <input type="text" id="itemora_detalle_02" name="itemora_detalle_02" value="<?php echo esc_attr($detalles[2]); ?>">
-                </div>
-                
-                <div class="itemora-field-row">
-                    <label for="itemora_detalle_03"><?php echo esc_html(get_option('itemora_label_detalles_03', 'Detalle 3')); ?></label>
-                    <input type="text" id="itemora_detalle_03" name="itemora_detalle_03" value="<?php echo esc_attr($detalles[3]); ?>">
-                </div>
-            </div>
-        <?php endif; ?>
-        
-        <?php if (get_option('itemora_activar_extras') === 'yes') : ?>
-            <div class="itemora-section">
-                <h4><?php _e('Extras', 'itemora'); ?></h4>
-                
-                <div class="itemora-field-row">
-                    <label for="itemora_extra_01"><?php echo esc_html(get_option('itemora_label_extra_01', 'Extra 1')); ?></label>
-                    <input type="text" id="itemora_extra_01" name="itemora_extra_01" value="<?php echo esc_attr($extras[1]); ?>">
-                </div>
-                
-                <div class="itemora-field-row">
-                    <label for="itemora_extra_02"><?php echo esc_html(get_option('itemora_label_extra_02', 'Extra 2')); ?></label>
-                    <input type="text" id="itemora_extra_02" name="itemora_extra_02" value="<?php echo esc_attr($extras[2]); ?>">
-                </div>
-                
-                <div class="itemora-field-row">
-                    <label for="itemora_extra_03"><?php echo esc_html(get_option('itemora_label_extra_03', 'Extra 3')); ?></label>
-                    <input type="text" id="itemora_extra_03" name="itemora_extra_03" value="<?php echo esc_attr($extras[3]); ?>">
-                </div>
-            </div>
-        <?php endif; ?>
+        <div class="itemora-field">
+            <label for="itemora_modelo"><?php _e('Modelo:', 'itemora'); ?></label>
+            <input type="text" id="itemora_modelo" name="itemora_modelo" value="<?php echo esc_attr($modelo); ?>" />
+        </div>
     </div>
     <?php
 }
 
 /**
- * Save meta box content
- *
- * @param int $post_id Post ID
+ * Callback para el metabox de precio y stock
  */
-function itemora_save_producto_data($post_id) {
-    // Check if nonce is set
-    if (!isset($_POST['itemora_producto_nonce'])) {
-        return;
+function itemora_product_price_callback($post) {
+    // Añadir nonce para verificación
+    wp_nonce_field('itemora_product_price_nonce', 'itemora_product_price_nonce');
+    
+    // Obtener valores actuales
+    $precio = get_post_meta($post->ID, '_itemora_precio', true);
+    $precio_oferta = get_post_meta($post->ID, '_itemora_precio_oferta', true);
+    $stock = get_post_meta($post->ID, '_itemora_stock', true);
+    $stock_status = get_post_meta($post->ID, '_itemora_stock_status', true);
+    
+    // Valores por defecto
+    if (empty($stock_status)) {
+        $stock_status = 'instock';
     }
+    
+    // Formulario para los campos
+    ?>
+    <div class="itemora-metabox">
+        <div class="itemora-field">
+            <label for="itemora_precio"><?php _e('Precio Regular ($):', 'itemora'); ?></label>
+            <input type="text" id="itemora_precio" name="itemora_precio" value="<?php echo esc_attr($precio); ?>" />
+        </div>
+        
+        <div class="itemora-field">
+            <label for="itemora_precio_oferta"><?php _e('Precio Oferta ($):', 'itemora'); ?></label>
+            <input type="text" id="itemora_precio_oferta" name="itemora_precio_oferta" value="<?php echo esc_attr($precio_oferta); ?>" />
+            <p class="description"><?php _e('Dejar en blanco si no hay oferta', 'itemora'); ?></p>
+        </div>
+        
+        <div class="itemora-field">
+            <label for="itemora_stock"><?php _e('Cantidad en Stock:', 'itemora'); ?></label>
+            <input type="number" id="itemora_stock" name="itemora_stock" value="<?php echo esc_attr($stock); ?>" min="0" />
+        </div>
+        
+        <div class="itemora-field">
+            <label><?php _e('Estado del Stock:', 'itemora'); ?></label>
+            <select name="itemora_stock_status" id="itemora_stock_status">
+                <option value="instock" <?php selected($stock_status, 'instock'); ?>><?php _e('En Stock', 'itemora'); ?></option>
+                <option value="outofstock" <?php selected($stock_status, 'outofstock'); ?>><?php _e('Agotado', 'itemora'); ?></option>
+                <option value="onbackorder" <?php selected($stock_status, 'onbackorder'); ?>><?php _e('Por Encargo', 'itemora'); ?></option>
+            </select>
+        </div>
+    </div>
+    <?php
+}
 
-    // Verify nonce
-    if (!wp_verify_nonce($_POST['itemora_producto_nonce'], 'itemora_save_producto_data')) {
-        return;
-    }
+/**
+ * Callback para el metabox de características adicionales
+ */
+function itemora_product_extras_callback($post) {
+    // Añadir nonce para verificación
+    wp_nonce_field('itemora_product_extras_nonce', 'itemora_product_extras_nonce');
+    
+    // Obtener valores actuales
+    $dimensiones = get_post_meta($post->ID, '_itemora_dimensiones', true);
+    $peso = get_post_meta($post->ID, '_itemora_peso', true);
+    $color = get_post_meta($post->ID, '_itemora_color', true);
+    $material = get_post_meta($post->ID, '_itemora_material', true);
+    $garantia = get_post_meta($post->ID, '_itemora_garantia', true);
+    $caracteristicas = get_post_meta($post->ID, '_itemora_caracteristicas', true);
+    
+    // Formulario para los campos
+    ?>
+    <div class="itemora-metabox">
+        <div class="itemora-field">
+            <label for="itemora_dimensiones"><?php _e('Dimensiones:', 'itemora'); ?></label>
+            <input type="text" id="itemora_dimensiones" name="itemora_dimensiones" value="<?php echo esc_attr($dimensiones); ?>" />
+            <p class="description"><?php _e('Formato: Alto x Ancho x Profundidad (cm)', 'itemora'); ?></p>
+        </div>
+        
+        <div class="itemora-field">
+            <label for="itemora_peso"><?php _e('Peso (kg):', 'itemora'); ?></label>
+            <input type="text" id="itemora_peso" name="itemora_peso" value="<?php echo esc_attr($peso); ?>" />
+        </div>
+        
+        <div class="itemora-field">
+            <label for="itemora_color"><?php _e('Color:', 'itemora'); ?></label>
+            <input type="text" id="itemora_color" name="itemora_color" value="<?php echo esc_attr($color); ?>" />
+        </div>
+        
+        <div class="itemora-field">
+            <label for="itemora_material"><?php _e('Material:', 'itemora'); ?></label>
+            <input type="text" id="itemora_material" name="itemora_material" value="<?php echo esc_attr($material); ?>" />
+        </div>
+        
+        <div class="itemora-field">
+            <label for="itemora_garantia"><?php _e('Garantía:', 'itemora'); ?></label>
+            <input type="text" id="itemora_garantia" name="itemora_garantia" value="<?php echo esc_attr($garantia); ?>" />
+            <p class="description"><?php _e('Ejemplo: 1 año, 6 meses, etc.', 'itemora'); ?></p>
+        </div>
+        
+        <div class="itemora-field">
+            <label for="itemora_caracteristicas"><?php _e('Características Adicionales:', 'itemora'); ?></label>
+            <textarea id="itemora_caracteristicas" name="itemora_caracteristicas" rows="5"><?php echo esc_textarea($caracteristicas); ?></textarea>
+            <p class="description"><?php _e('Ingresa una característica por línea', 'itemora'); ?></p>
+        </div>
+    </div>
+    <?php
+}
 
-    // If this is an autosave, don't do anything
+/**
+ * Guarda los metadatos del producto
+ */
+function itemora_save_product_meta($post_id) {
+    // Verificar si es autoguardado
     if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
         return;
     }
-
-    // Check user permissions
+    
+    // Verificar el tipo de post
+    if (get_post_type($post_id) !== 'itemora_producto') {
+        return;
+    }
+    
+    // Verificar permisos
     if (!current_user_can('edit_post', $post_id)) {
         return;
     }
-
-    // Save precio
-    if (isset($_POST['itemora_precio'])) {
-        update_post_meta($post_id, '_itemora_precio', sanitize_text_field($_POST['itemora_precio']));
-    }
-
-    // Save SKU
-    if (isset($_POST['itemora_sku'])) {
-        update_post_meta($post_id, '_itemora_sku', sanitize_text_field($_POST['itemora_sku']));
-    }
-
-    // Save stock
-    if (isset($_POST['itemora_stock'])) {
-        update_post_meta($post_id, '_itemora_stock', absint($_POST['itemora_stock']));
-    }
-
-    // Save detalles if enabled
-    if (get_option('itemora_activar_detalles') === 'yes') {
-        if (isset($_POST['itemora_detalle_01'])) {
-            update_post_meta($post_id, '_itemora_detalle_01', sanitize_text_field($_POST['itemora_detalle_01']));
+    
+    // Guardar detalles del producto
+    if (isset($_POST['itemora_product_details_nonce']) && wp_verify_nonce($_POST['itemora_product_details_nonce'], 'itemora_product_details_nonce')) {
+        if (isset($_POST['itemora_sku'])) {
+            update_post_meta($post_id, '_itemora_sku', sanitize_text_field($_POST['itemora_sku']));
         }
-        if (isset($_POST['itemora_detalle_02'])) {
-            update_post_meta($post_id, '_itemora_detalle_02', sanitize_text_field($_POST['itemora_detalle_02']));
+        
+        if (isset($_POST['itemora_codigo'])) {
+            update_post_meta($post_id, '_itemora_codigo', sanitize_text_field($_POST['itemora_codigo']));
         }
-        if (isset($_POST['itemora_detalle_03'])) {
-            update_post_meta($post_id, '_itemora_detalle_03', sanitize_text_field($_POST['itemora_detalle_03']));
+        
+        if (isset($_POST['itemora_marca'])) {
+            update_post_meta($post_id, '_itemora_marca', sanitize_text_field($_POST['itemora_marca']));
+        }
+        
+        if (isset($_POST['itemora_modelo'])) {
+            update_post_meta($post_id, '_itemora_modelo', sanitize_text_field($_POST['itemora_modelo']));
         }
     }
-
-    // Save extras if enabled
-    if (get_option('itemora_activar_extras') === 'yes') {
-        if (isset($_POST['itemora_extra_01'])) {
-            update_post_meta($post_id, '_itemora_extra_01', sanitize_text_field($_POST['itemora_extra_01']));
+    
+    // Guardar precio y stock
+    if (isset($_POST['itemora_product_price_nonce']) && wp_verify_nonce($_POST['itemora_product_price_nonce'], 'itemora_product_price_nonce')) {
+        if (isset($_POST['itemora_precio'])) {
+            update_post_meta($post_id, '_itemora_precio', sanitize_text_field($_POST['itemora_precio']));
         }
-        if (isset($_POST['itemora_extra_02'])) {
-            update_post_meta($post_id, '_itemora_extra_02', sanitize_text_field($_POST['itemora_extra_02']));
+        
+        if (isset($_POST['itemora_precio_oferta'])) {
+            update_post_meta($post_id, '_itemora_precio_oferta', sanitize_text_field($_POST['itemora_precio_oferta']));
         }
-        if (isset($_POST['itemora_extra_03'])) {
-            update_post_meta($post_id, '_itemora_extra_03', sanitize_text_field($_POST['itemora_extra_03']));
+        
+        if (isset($_POST['itemora_stock'])) {
+            update_post_meta($post_id, '_itemora_stock', absint($_POST['itemora_stock']));
+        }
+        
+        if (isset($_POST['itemora_stock_status'])) {
+            update_post_meta($post_id, '_itemora_stock_status', sanitize_text_field($_POST['itemora_stock_status']));
+        }
+    }
+    
+    // Guardar características adicionales
+    if (isset($_POST['itemora_product_extras_nonce']) && wp_verify_nonce($_POST['itemora_product_extras_nonce'], 'itemora_product_extras_nonce')) {
+        if (isset($_POST['itemora_dimensiones'])) {
+            update_post_meta($post_id, '_itemora_dimensiones', sanitize_text_field($_POST['itemora_dimensiones']));
+        }
+        
+        if (isset($_POST['itemora_peso'])) {
+            update_post_meta($post_id, '_itemora_peso', sanitize_text_field($_POST['itemora_peso']));
+        }
+        
+        if (isset($_POST['itemora_color'])) {
+            update_post_meta($post_id, '_itemora_color', sanitize_text_field($_POST['itemora_color']));
+        }
+        
+        if (isset($_POST['itemora_material'])) {
+            update_post_meta($post_id, '_itemora_material', sanitize_text_field($_POST['itemora_material']));
+        }
+        
+        if (isset($_POST['itemora_garantia'])) {
+            update_post_meta($post_id, '_itemora_garantia', sanitize_text_field($_POST['itemora_garantia']));
+        }
+        
+        if (isset($_POST['itemora_caracteristicas'])) {
+            update_post_meta($post_id, '_itemora_caracteristicas', sanitize_textarea_field($_POST['itemora_caracteristicas']));
         }
     }
 }
-add_action('save_post_itemora_producto', 'itemora_save_producto_data');
+add_action('save_post_itemora_producto', 'itemora_save_product_meta');
 
 /**
- * Add custom columns to the product list
+ * Añade columnas personalizadas a la lista de productos
  *
- * @param array $columns Array of columns
- * @return array Modified array of columns
+ * @param array $columns Columnas existentes
+ * @return array Columnas modificadas
  */
-function itemora_add_producto_columns($columns) {
+function itemora_add_product_columns($columns) {
     $new_columns = array();
     
     foreach ($columns as $key => $value) {
-        $new_columns[$key] = $value;
-        
-        // Add our columns after title
         if ($key === 'title') {
-            $new_columns['precio'] = __('Precio', 'itemora');
+            $new_columns[$key] = $value;
             $new_columns['sku'] = __('SKU', 'itemora');
+            $new_columns['precio'] = __('Precio', 'itemora');
             $new_columns['stock'] = __('Stock', 'itemora');
+        } elseif ($key === 'date') {
+            $new_columns['marca'] = __('Marca', 'itemora');
+            $new_columns[$key] = $value;
+        } else {
+            $new_columns[$key] = $value;
         }
     }
     
     return $new_columns;
 }
-add_filter('manage_itemora_producto_posts_columns', 'itemora_add_producto_columns');
+add_filter('manage_itemora_producto_posts_columns', 'itemora_add_product_columns');
 
 /**
- * Display data in custom columns
+ * Muestra el contenido de las columnas personalizadas
  *
- * @param string $column Column name
- * @param int $post_id Post ID
+ * @param string $column Nombre de la columna
+ * @param int $post_id ID del post
  */
-function itemora_display_producto_columns($column, $post_id) {
+function itemora_display_product_columns($column, $post_id) {
     switch ($column) {
-        case 'precio':
-            $precio = get_post_meta($post_id, '_itemora_precio', true);
-            echo esc_html($precio);
-            break;
-            
         case 'sku':
             $sku = get_post_meta($post_id, '_itemora_sku', true);
-            echo esc_html($sku);
+            echo !empty($sku) ? esc_html($sku) : '—';
+            break;
+            
+        case 'precio':
+            $precio = get_post_meta($post_id, '_itemora_precio', true);
+            $precio_oferta = get_post_meta($post_id, '_itemora_precio_oferta', true);
+            
+            if (!empty($precio)) {
+                echo '<span class="itemora-precio">$' . esc_html($precio) . '</span>';
+                
+                if (!empty($precio_oferta)) {
+                    echo ' <span class="itemora-precio-oferta">$' . esc_html($precio_oferta) . '</span>';
+                }
+            } else {
+                echo '—';
+            }
             break;
             
         case 'stock':
             $stock = get_post_meta($post_id, '_itemora_stock', true);
-            echo esc_html($stock);
+            $stock_status = get_post_meta($post_id, '_itemora_stock_status', true);
+            
+            if ($stock_status === 'instock') {
+                echo '<span class="itemora-stock-status instock">' . __('En Stock', 'itemora') . '</span>';
+                if (!empty($stock)) {
+                    echo ' (' . esc_html($stock) . ')';
+                }
+            } elseif ($stock_status === 'outofstock') {
+                echo '<span class="itemora-stock-status outofstock">' . __('Agotado', 'itemora') . '</span>';
+            } elseif ($stock_status === 'onbackorder') {
+                echo '<span class="itemora-stock-status onbackorder">' . __('Por Encargo', 'itemora') . '</span>';
+            } else {
+                echo '—';
+            }
+            break;
+            
+        case 'marca':
+            $marca = get_post_meta($post_id, '_itemora_marca', true);
+            $modelo = get_post_meta($post_id, '_itemora_modelo', true);
+            
+            if (!empty($marca)) {
+                echo esc_html($marca);
+                
+                if (!empty($modelo)) {
+                    echo ' / ' . esc_html($modelo);
+                }
+            } else {
+                echo '—';
+            }
             break;
     }
 }
-add_action('manage_itemora_producto_posts_custom_column', 'itemora_display_producto_columns', 10, 2);
+add_action('manage_itemora_producto_posts_custom_column', 'itemora_display_product_columns', 10, 2);
 
 /**
- * Make custom columns sortable
+ * Hace que las columnas personalizadas sean ordenables
  *
- * @param array $columns Array of sortable columns
- * @return array Modified array of sortable columns
+ * @param array $columns Columnas existentes
+ * @return array Columnas modificadas
  */
-function itemora_sortable_producto_columns($columns) {
-    $columns['precio'] = 'precio';
+function itemora_sortable_product_columns($columns) {
     $columns['sku'] = 'sku';
+    $columns['precio'] = 'precio';
     $columns['stock'] = 'stock';
+    $columns['marca'] = 'marca';
     
     return $columns;
 }
-add_filter('manage_edit-itemora_producto_sortable_columns', 'itemora_sortable_producto_columns');
+add_filter('manage_edit-itemora_producto_sortable_columns', 'itemora_sortable_product_columns');
 
 /**
- * Handle custom sorting
+ * Gestiona la ordenación de las columnas personalizadas
  *
- * @param WP_Query $query The WordPress query object
+ * @param WP_Query $query Objeto de consulta
  */
-function itemora_producto_orderby($query) {
+function itemora_product_columns_orderby($query) {
     if (!is_admin() || !$query->is_main_query()) {
         return;
     }
-
+    
+    if ($query->get('post_type') !== 'itemora_producto') {
+        return;
+    }
+    
     $orderby = $query->get('orderby');
-
-    if ('precio' === $orderby) {
-        $query->set('meta_key', '_itemora_precio');
-        $query->set('orderby', 'meta_value_num');
-    } elseif ('sku' === $orderby) {
-        $query->set('meta_key', '_itemora_sku');
-        $query->set('orderby', 'meta_value');
-    } elseif ('stock' === $orderby) {
-        $query->set('meta_key', '_itemora_stock');
-        $query->set('orderby', 'meta_value_num');
-    }
-}
-add_action('pre_get_posts', 'itemora_producto_orderby');
-
-/**
- * Add filter dropdowns to the products list
- */
-function itemora_add_producto_filters() {
-    global $typenow;
     
-    if ('itemora_producto' === $typenow) {
-        // Filter by tipo_producto taxonomy
-        $tipo_producto_taxonomy = 'tipo_producto';
-        $selected_tipo = isset($_GET[$tipo_producto_taxonomy]) ? $_GET[$tipo_producto_taxonomy] : '';
-        $tipo_args = array(
-            'show_option_all' => __('Todos los tipos', 'itemora'),
-            'taxonomy' => $tipo_producto_taxonomy,
-            'name' => $tipo_producto_taxonomy,
-            'orderby' => 'name',
-            'selected' => $selected_tipo,
-            'hierarchical' => true,
-            'show_count' => true,
-            'hide_empty' => false,
-        );
-        wp_dropdown_categories($tipo_args);
-        
-        // Filter by sucursal taxonomy if enabled
-        if (get_option('itemora_activar_sucursal') === 'yes') {
-            $sucursal_taxonomy = 'sucursal';
-            $selected_sucursal = isset($_GET[$sucursal_taxonomy]) ? $_GET[$sucursal_taxonomy] : '';
-            $sucursal_args = array(
-                'show_option_all' => __('Todas las sucursales', 'itemora'),
-                'taxonomy' => $sucursal_taxonomy,
-                'name' => $sucursal_taxonomy,
-                'orderby' => 'name',
-                'selected' => $selected_sucursal,
-                'hierarchical' => true,
-                'show_count' => true,
-                'hide_empty' => false,
-            );
-            wp_dropdown_categories($sucursal_args);
-        }
+    switch ($orderby) {
+        case 'sku':
+            $query->set('meta_key', '_itemora_sku');
+            $query->set('orderby', 'meta_value');
+            break;
+            
+        case 'precio':
+            $query->set('meta_key', '_itemora_precio');
+            $query->set('orderby', 'meta_value_num');
+            break;
+            
+        case 'stock':
+            $query->set('meta_key', '_itemora_stock');
+            $query->set('orderby', 'meta_value_num');
+            break;
+            
+        case 'marca':
+            $query->set('meta_key', '_itemora_marca');
+            $query->set('orderby', 'meta_value');
+            break;
     }
 }
-add_action('restrict_manage_posts', 'itemora_add_producto_filters');
+add_action('pre_get_posts', 'itemora_product_columns_orderby');
 
 /**
- * Modify the query for taxonomy filters
- *
- * @param WP_Query $query The WordPress query object
+ * Registra los scripts y estilos para el CPT
  */
-function itemora_producto_filter_query($query) {
-    global $pagenow, $typenow;
+function itemora_cpt_admin_scripts($hook) {
+    global $post_type;
     
-    if ('edit.php' !== $pagenow || 'itemora_producto' !== $typenow || !is_admin()) {
-        return;
-    }
-    
-    // Convert tipo_producto term ID to taxonomy term in query
-    if (isset($_GET['tipo_producto']) && $_GET['tipo_producto'] > 0) {
-        $term = get_term_by('id', $_GET['tipo_producto'], 'tipo_producto');
-        $query->query_vars['tax_query'][] = array(
-            'taxonomy' => 'tipo_producto',
-            'field' => 'slug',
-            'terms' => $term->slug,
-        );
-    }
-    
-    // Convert sucursal term ID to taxonomy term in query
-    if (isset($_GET['sucursal']) && $_GET['sucursal'] > 0) {
-        $term = get_term_by('id', $_GET['sucursal'], 'sucursal');
-        $query->query_vars['tax_query'][] = array(
-            'taxonomy' => 'sucursal',
-            'field' => 'slug',
-            'terms' => $term->slug,
-        );
+    if (($hook === 'post.php' || $hook === 'post-new.php') && $post_type === 'itemora_producto') {
+        wp_enqueue_style('itemora-admin-style');
+        wp_enqueue_script('itemora-admin-script');
     }
 }
-add_action('pre_get_posts', 'itemora_producto_filter_query');
-
-/**
- * Add custom meta boxes for product details
- */
-function itemora_add_producto_meta_boxes() {
-    add_meta_box(
-        'itemora_producto_precio',
-        __('Precio y Detalles', 'itemora'),
-        'itemora_producto_precio_callback',
-        'itemora_producto',
-        'normal',
-        'high'
-    );
-}
-add_action('add_meta_boxes', 'itemora_add_producto_meta_boxes');
-
-/**
- * Callback function for the precio meta box
- *
- * @param WP_Post $post Current post object
- */
-function itemora_producto_precio_callback($post) {
-    // Add nonce for security
-    wp_nonce_field('itemora_save_producto_meta', 'itemora_producto_meta_nonce');
-    
-    // Get current values
-    $precio = get_post_meta($post->ID, '_itemora_precio', true);
-    $sku = get_post_meta($post->ID, '_itemora_sku', true);
-    $stock = get_post_meta($post->ID, '_itemora_stock', true);
-    
-    // Output fields
-    ?>
-    <div class="itemora-meta-box">
-        <div class="itemora-field-row">
-            <label for="itemora_precio"><?php _e('Precio:', 'itemora'); ?></label>
-            <input type="text" id="itemora_precio" name="itemora_precio" value="<?php echo esc_attr($precio); ?>">
-        </div>
-        
-        <div class="itemora-field-row">
-            <label for="itemora_sku"><?php _e('SKU:', 'itemora'); ?></label>
-            <input type="text" id="itemora_sku" name="itemora_sku" value="<?php echo esc_attr($sku); ?>">
-        </div>
-        
-        <div class="itemora-field-row">
-            <label for="itemora_stock"><?php _e('Stock:', 'itemora'); ?></label>
-            <input type="number" id="itemora_stock" name="itemora_stock" value="<?php echo esc_attr($stock); ?>" min="0">
-        </div>
-        
-        <?php
-        // Add detalles fields if enabled
-        if (get_option('itemora_activar_detalles') === 'yes') {
-            $detalle_1 = get_post_meta($post->ID, '_itemora_detalle_1', true);
-            $detalle_2 = get_post_meta($post->ID, '_itemora_detalle_2', true);
-            $detalle_3 = get_post_meta($post->ID, '_itemora_detalle_3', true);
-            
-            $label_1 = get_option('itemora_label_detalles_01', 'Detalle 1');
-            $label_2 = get_option('itemora_label_detalles_02', 'Detalle 2');
-            $label_3 = get_option('itemora_label_detalles_03', 'Detalle 3');
-            ?>
-            <hr>
-            <h4><?php _e('Detalles', 'itemora'); ?></h4>
-            
-            <div class="itemora-field-row">
-                <label for="itemora_detalle_1"><?php echo esc_html($label_1); ?>:</label>
-                <input type="text" id="itemora_detalle_1" name="itemora_detalle_1" value="<?php echo esc_attr($detalle_1); ?>">
-            </div>
-            
-            <div class="itemora-field-row">
-                <label for="itemora_detalle_2"><?php echo esc_html($label_2); ?>:</label>
-                <input type="text" id="itemora_detalle_2" name="itemora_detalle_2" value="<?php echo esc_attr($detalle_2); ?>">
-            </div>
-            
-            <div class="itemora-field-row">
-                <label for="itemora_detalle_3"><?php echo esc_html($label_3); ?>:</label>
-                <input type="text" id="itemora_detalle_3" name="itemora_detalle_3" value="<?php echo esc_attr($detalle_3); ?>">
-            </div>
-            <?php
-        }
-        
-        // Add extras fields if enabled
-        if (get_option('itemora_activar_extras') === 'yes') {
-            $extra_1 = get_post_meta($post->ID, '_itemora_extra_1', true);
-            $extra_2 = get_post_meta($post->ID, '_itemora_extra_2', true);
-            $extra_3 = get_post_meta($post->ID, '_itemora_extra_3', true);
-            
-            $label_1 = get_option('itemora_label_extra_01', 'Extra 1');
-            $label_2 = get_option('itemora_label_extra_02', 'Extra 2');
-            $label_3 = get_option('itemora_label_extra_03', 'Extra 3');
-            ?>
-            <hr>
-            <h4><?php _e('Extras', 'itemora'); ?></h4>
-            
-            <div class="itemora-field-row">
-                <label for="itemora_extra_1"><?php echo esc_html($label_1); ?>:</label>
-                <input type="text" id="itemora_extra_1" name="itemora_extra_1" value="<?php echo esc_attr($extra_1); ?>">
-            </div>
-            
-            <div class="itemora-field-row">
-                <label for="itemora_extra_2"><?php echo esc_html($label_2); ?>:</label>
-                <input type="text" id="itemora_extra_2" name="itemora_extra_2" value="<?php echo esc_attr($extra_2); ?>">
-            </div>
-            
-            <div class="itemora-field-row">
-                <label for="itemora_extra_3"><?php echo esc_html($label_3); ?>:</label>
-                <input type="text" id="itemora_extra_3" name="itemora_extra_3" value="<?php echo esc_attr($extra_3); ?>">
-            </div>
-            <?php
-        }
-        ?>
-    </div>
-    <?php
-}
-
-/**
- * Save product meta data
- *
- * @param int $post_id Post ID
- */
-function itemora_save_producto_meta($post_id) {
-    // Check if nonce is set
-    if (!isset($_POST['itemora_producto_meta_nonce'])) {
-        return;
-    }
-    
-    // Verify nonce
-    if (!wp_verify_nonce($_POST['itemora_producto_meta_nonce'], 'itemora_save_producto_meta')) {
-        return;
-    }
-    
-    // If this is an autosave, don't do anything
-    if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
-        return;
-    }
-    
-    // Check user permissions
-    if (!current_user_can('edit_post', $post_id)) {
-        return;
-    }
-    
-    // Save precio
-    if (isset($_POST['itemora_precio'])) {
-        update_post_meta($post_id, '_itemora_precio', sanitize_text_field($_POST['itemora_precio']));
-    }
-    
-    // Save SKU
-    if (isset($_POST['itemora_sku'])) {
-        update_post_meta($post_id, '_itemora_sku', sanitize_text_field($_POST['itemora_sku']));
-    }
-    
-    // Save stock
-    if (isset($_POST['itemora_stock'])) {
-        update_post_meta($post_id, '_itemora_stock', absint($_POST['itemora_stock']));
-    }
-    
-    // Save detalles if enabled
-    if (get_option('itemora_activar_detalles') === 'yes') {
-        if (isset($_POST['itemora_detalle_1'])) {
-            update_post_meta($post_id, '_itemora_detalle_1', sanitize_text_field($_POST['itemora_detalle_1']));
-        }
-        if (isset($_POST['itemora_detalle_2'])) {
-            update_post_meta($post_id, '_itemora_detalle_2', sanitize_text_field($_POST['itemora_detalle_2']));
-        }
-        if (isset($_POST['itemora_detalle_3'])) {
-            update_post_meta($post_id, '_itemora_detalle_3', sanitize_text_field($_POST['itemora_detalle_3']));
-        }
-    }
-    
-    // Save extras if enabled
-    if (get_option('itemora_activar_extras') === 'yes') {
-        if (isset($_POST['itemora_extra_1'])) {
-            update_post_meta($post_id, '_itemora_extra_1', sanitize_text_field($_POST['itemora_extra_1']));
-        }
-        if (isset($_POST['itemora_extra_2'])) {
-            update_post_meta($post_id, '_itemora_extra_2', sanitize_text_field($_POST['itemora_extra_2']));
-        }
-        if (isset($_POST['itemora_extra_3'])) {
-            update_post_meta($post_id, '_itemora_extra_3', sanitize_text_field($_POST['itemora_extra_3']));
-        }
-    }
-}
-add_action('save_post_itemora_producto', 'itemora_save_producto_meta');
+add_action('admin_enqueue_scripts', 'itemora_cpt_admin_scripts');
